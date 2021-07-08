@@ -1,0 +1,379 @@
+<html>
+	<canvas id="Board" width="1200px" height="480px">
+		Sorry,your browser don't support canvas. Please try another one.
+	</canvas>
+	<script>
+		var colors = {
+			blackblock : "rgb(181,136,99)",
+			whiteblock : "rgb(240,217,181)",
+			selectblock: "rgb(130,151,105)",
+			whitechess : "rgb(255,255,255)",
+			blackchess : "rgb(0,0,0)",
+			test : "#00FF00"
+		};
+		var boardh = 8,boardw = 20;
+		var blocka = 60;
+		var nowDistance = 0;
+		var nowBlockDistance = 1;
+		var clock = 0;
+		var canvas = document.getElementById('Board');
+		var ctx = canvas.getContext('2d');
+		var blackchesses = new Array();
+		var player;
+		
+		function get_random(min, max) {
+			min = Math.ceil(min);
+			max = Math.floor(max);
+			return Math.floor(Math.random() * (max - min + 1)) + min;
+		}
+		
+		function pop_front(a) {
+			for(let i in a) {
+				if(i != 0) {
+					a[i-1] = a[i];
+				}
+			}
+			a.pop();
+		}
+		
+		function Timequeue(maxt) {
+			this.q = new Array();
+			this.maxt = new Array();
+			this.lstlen = 0;
+			this.update = () => {
+				let d = new Date();
+				let val = d.getMilliseconds() + 1000*d.getSeconds() + 60000*d.getMinutes() + 3600000*d.getHours();
+				this.q.push(val);
+				while(val - this.q[0] >= maxt) {
+					pop_front(this.q);
+				}
+				if(clock % 10 == 0) {
+					this.lstlen = this.q.length;
+				}
+			}
+		}
+
+		function drawPic(pic, x, y, h, w){
+		    let img = new Image();
+		    img.src = pic;
+			console.log(img);
+		    ctx.drawImage(img, x, y, h, w);
+		}
+		function drawFilledRect(x, y, a, b, d, col, fillcol) {
+        	ctx.fillStyle = col;
+        	ctx.fillRect(x, y, a, d);
+        	ctx.fillRect(x, y, d, b);
+        	ctx.fillRect(x+a-d, y, d, b);
+        	// console.log(x+a-d,y,a,d);
+        	ctx.fillRect(x, y+b-d, a, d);
+        	ctx.fillStyle = fillcol;
+        	ctx.fillRect(x+d, y+d, a-d*2, b-d*2);
+        }
+        function drawFilledCirc(ox, oy, r1, r2, col, fillcol) {
+        	ctx.beginPath();
+        	ctx.lineWidth = r2-r1;
+        	ctx.strokeStyle = col;
+        	ctx.arc(ox, oy, (r1+r2)/2, 0, 2*Math.PI);
+        	ctx.stroke();
+        	ctx.closePath();
+        	ctx.beginPath();
+        	ctx.lineWidth = r1;
+        	ctx.strokeStyle = fillcol;
+        	ctx.arc(ox, oy, r1/2, 0, 2*Math.PI);
+        	ctx.stroke();
+        	ctx.closePath();
+        }
+		
+		var fpsq = new Timequeue(1000);
+		
+		var mousex=-1, mousey=-1;
+		var selectx=-1, selecty=-1;
+		
+		document.addEventListener('click', getmousepos);
+		function getmousepos(e) {
+			mousex = e.clientX - 9;
+			mousey = e.clientY - 9;
+			mouseSelect(mousex,mousey);
+		}
+		function mouseSelect(x, y) {
+			selectx = Math.ceil((mousex+nowDistance)/blocka)-1;
+			selecty = Math.ceil(mousey/blocka)-1;
+			console.log(selectx,selecty);
+		}
+		function drawSelect() {
+			if(selectx==-1 || selecty==-1){
+				return;
+			}
+
+			ctx.fillStyle = colors.selectblock;
+			ctx.fillRect(
+				selectx*blocka-nowDistance,
+				selecty*blocka, blocka, blocka
+			);
+		}
+		
+		function getBlockDisplayX(x) {
+		    return (x-0)*blocka-nowDistance;
+		}
+		function getBlockDisplayY(y) {
+		    return (y-0)*blocka;
+		}
+		
+		function drawBoard() {
+			// ctx.fillRect(0,0,1600,640,colors.blackblock);
+			
+			for(let i=1; i<=boardh; i ++) {
+				for(let j=0; j<=boardw+1; j++) {
+					let ty = (i+j+nowBlockDistance)%2;
+					if(ty == 1) {
+						ctx.fillStyle = colors.blackblock;
+					}
+					if(ty == 0) {
+						ctx.fillStyle = colors.whiteblock;
+					}
+					ctx.fillRect(
+						-nowDistance+nowBlockDistance*blocka+(j-1)*blocka,
+						(i-1)*blocka, blocka, blocka
+					);
+				}
+			}
+		}
+		
+		function getChess(x, y) {
+		    if(player.x == x && player.y == y) {
+		        return player;
+		    }
+		    for(let i in blackchesses) {
+		        if(blackchesses[i].x == x && blackchesses[i].y == y) {
+		            return blackchesses[i];
+		        }
+		    }
+		    return new BlankChess();
+		}
+		function Position(x, y) {
+		    this.x = x;
+		    this.y = y;
+		    
+		    this.draw = () => {
+		        let e = getChess(this.x, this.y);
+		        
+		        if(e.team == "White") {
+		            return;
+		        }
+		        if(e.team == "None") {
+		            d
+		        }
+		    }
+		}
+		
+		function BlankChess(x, y){
+		    this.x = x;
+		    this.y = y;
+		    this.team = "None";
+		}
+		function Player(x, y) {
+			this.x = x;
+			this.y = y;
+			this.team = "White";
+			this.d = new Array(
+			    new Position(1, 2),
+			    new Position(-1, 2),
+			    new Position(1, -2),
+			    new Position(-1, -2),
+			    new Position(2, 1),
+			    new Position(-2, 1),
+			    new Position(2, -1),
+			    new Position(-2, -1)
+			);
+			
+			this.draw = () => {
+				// ctx.fillStyle = colors.whitechess;
+				// ctx.font = "55px Consolas";
+				// ctx.fillText("N",getBlockDisplayX(this.x), getBlockDisplayY(this.y));
+				// ctx.fillStyle = colors.test;
+				// ctx.fillRect(getBlockDisplayX(this.x)-5, getBlockDisplayY(this.y)-5,10,10);
+		        drawPic("chessPic\\White\\Knight.png",getBlockDisplayX(this.x),getBlockDisplayY(this.y),blocka,blocka);
+			}
+			this.canMove = (x, y) => {
+			    for(let i in this.d) {
+			        let e=this.d[i];
+			        
+			        if(this.x+e.x==x && this.y+e.y==y) {
+			            return true;
+			        }
+			    }
+			    return false;
+			}
+		}
+		function Pawn(x, y) {
+		    this.x = x;
+		    this.y = y;
+		    this.team = "Black";
+		    
+		    this.draw = () => {
+		      // ctx.fillStyle = colors.blackchess;
+		      // ctx.font = "55px Consolas";
+		      // ctx.fillText("P",getBlockDisplayX(this.x), getBlockDisplayY(this.y));
+		        drawPic("chessPic\\Black\\Pawn.png",getBlockDisplayX(this.x),getBlockDisplayY(this.y),blocka,blocka);
+		    }
+		    
+		    this.canMove = (x, y) => {
+		        if(x != this.x - 1) {
+		            return false;
+		        }
+		        if(y == this.y) {
+		            return getChess(x, y).team == "None";
+		        }
+		        if(y == this.y - 1 || y == this.y + 1) {
+		            return getChess(x, y).team == "White";
+		        }
+		    }
+		}
+		function Bishop(x, y) {
+		    this.x = x;
+		    this.y = y;
+		    this.team = "Black";
+		    
+		    this.draw = () => {
+		        drawPic("chessPic\\Black\\Bishop.png",getBlockDisplayX(this.x),getBlockDisplayY(this.y),blocka,blocka);
+		    }
+		    
+		    this.canMove = (x, y) => {
+		        if(x==this.x && y==this.y) {
+		            return false;
+		        }
+		        if(getChess(x, y).team == "Black") {
+		            return false;
+		        }
+		        if(x-this.x!=y-this.y && x+this.x!=y+this.y) {
+		            return false;
+		        }
+
+		        let xd=(x == this.x ? 0 : (x-this.x)/Math.abs(x-this.x));
+		        let yd=(y == this.y ? 0 : (y-this.y)/Math.abs(y-this.y));
+		        for(let xt=this.x+xd, yt=this.y+yd; xt!=x; xt+=xd, yt+=yd) {
+		            if(getChess(xt, yt).team == "Black") {
+		                return false;
+		            }
+		        }
+		        return true;
+		    }
+		}
+		function Rook(x, y) {
+		    this.x=x;
+		    this.y=y;
+		    this.team = "Black";
+		    
+		    this.draw = () => {
+		        drawPic("chessPic\\Black\\Rook.png",getBlockDisplayX(this.x),getBlockDisplayY(this.y),blocka,blocka);
+		    }
+		    
+		    this.canMove = (x, y) => {
+		        if(getChess(x, y).team == "Black") {
+		            return false;
+		        }
+		        if(this.x==x && this.y==y) {
+		            return false;
+		        }
+		        if(this.x!=x && this.y!=y) {
+		            return false;
+		        }
+		        
+		        let xd=(x == this.x ? 0 : (x-this.x)/Math.abs(x-this.x));
+		        let yd=(y == this.y ? 0 : (y-this.y)/Math.abs(y-this.y));
+		        for(let xt=this.x+xd, yt=this.y+yd; xt!=x || yt!=y; xt+=xd, yt+=yd) {
+		            if(getChess(xt, yt).team == "Black") {
+		                return false;
+		            }
+		        }
+		        return true;
+		    }
+		}
+		function Queen(x, y) {
+		    this.x=x;
+		    this.y=y;
+		    this.team = "Black";
+		    
+		    this.draw = () => {
+		        drawPic("chessPic\\Black\\Queen.png",getBlockDisplayX(this.x),getBlockDisplayY(this.y),blocka,blocka);
+		    }
+		    
+		    this.canMove = (x, y) => {
+		        if(x==this.x && y==this.y) {
+		            return false;
+		        }
+		        if(getChess(x, y).team == "Black") {
+		            return false;
+		        }
+		        if(x!=this.x && y!=this.y && x+this.x!=y+this.y && x-this.x!=y-this.y) {
+		            return false;
+		        }
+		        let xd=(x == this.x ? 0 : (x-this.x)/Math.abs(x-this.x));
+		        let yd=(y == this.y ? 0 : (y-this.y)/Math.abs(y-this.y));
+		        for(let xt=this.x+xd, yt=this.y+yd; xt!=x || yt!=y; xt+=xd, yt+=yd) {
+		            if(getChess(xt, yt).team == "Black") {
+		                return false;
+		            }
+		        }
+		        return true;
+		    }
+		}
+		
+		function drawCanMove(c) {
+			console.log(c,"can move :");
+		    for(let i = 0; i <= boardh; i += 1) {
+		        for(let j = Math.floor(nowBlockDistance/blocka); j <= Math.floor(nowBlockDistance/blocka) + boardw; j += 1) {
+		            if(c.canMove(i, j)) {
+						console.log(i,j);
+		                drawFilledCirc(getBlockDisplayX(i, j)+25, getBlockDisplayY(i, j)+25, 6, 0, colors.selectblock+"99", "#FF0000");
+		            }
+		        }
+		    }
+		}
+		
+		function drawChesses() {
+		    player.draw();
+		    for(let i in blackchesses) {
+		        blackchesses[i].draw();
+		    }
+		}
+		
+		function drawAll() {
+			drawBoard();
+			drawSelect();
+			drawChesses();
+			console.log("Draw player...");
+			drawCanMove(player);
+			console.log("Drawed.");
+			for(let i in blackchesses) {
+				console.log("Draw Blackchess #"+i.toString()+"...");
+			    drawCanMove(blackchesses[i]);
+				console.log("Drawed.");
+			}
+		}
+		
+		function init() {
+			canvas.style.border = "3px solid #ccc";
+			player = new Player(1,4);
+			blackchesses.push(new Pawn(5,5));
+			blackchesses.push(new Bishop(6,6));
+			blackchesses.push(new Queen(7,2));
+			requestAnimationFrame(update);
+		}
+		function update() {
+			clock += 1;
+			console.log("Update #"+clock);
+			fpsq.update();
+			if(clock%2==1){
+				// nowDistance+=1;
+			}
+			if(nowDistance >= nowBlockDistance*blocka) {
+				nowBlockDistance +=1;
+			}
+			drawAll();
+			requestAnimationFrame(update);
+		}
+		
+		onload = init;
+	</script>
+</html>
